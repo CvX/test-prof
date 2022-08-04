@@ -41,7 +41,7 @@ module TestProf
         @modifiers ||= {}
       end
 
-      def wrap_with_modifiers(mods, &block)
+      def wrap_with_modifiers(mods, original_block, &block)
         return block if mods.empty?
 
         validate_modifiers! mods
@@ -49,7 +49,7 @@ module TestProf
         -> {
           record = instance_eval(&block)
           mods.inject(record) do |rec, (k, v)|
-            LetItBe.modifiers.fetch(k).call(rec, v)
+            LetItBe.modifiers.fetch(k).call(rec, v, original_block)
           end
         }
       end
@@ -99,7 +99,7 @@ module TestProf
 
       before_all(&initializer)
 
-      let_accessor = LetItBe.wrap_with_modifiers(options) do
+      let_accessor = LetItBe.wrap_with_modifiers(options, block) do
         instance_variable_get(:"#{PREFIX}#{identifier}")
       end
 
@@ -200,7 +200,7 @@ if defined?(::ActiveRecord::Base)
       record
     end
 
-    config.register_modifier :refind do |record, val|
+    config.register_modifier :refind do |record, val, original_block|
       next record unless val
 
       next record.refind if record.is_a?(::ActiveRecord::Base)
@@ -210,7 +210,8 @@ if defined?(::ActiveRecord::Base)
           rec.is_a?(::ActiveRecord::Base) ? rec.refind : rec
         end
       end
-      record
+
+      instance_eval(&original_block)
     end
 
     config.register_modifier :freeze do |record, val|

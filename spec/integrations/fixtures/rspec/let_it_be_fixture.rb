@@ -31,6 +31,18 @@ TestProf::LetItBe.configure do |config|
   config.alias_to :да_будет_так
 end
 
+class IceCube
+  attr_reader :melted
+
+  def initialize
+    @melted = false
+  end
+
+  def melt
+    @melted = true
+  end
+end
+
 RSpec.describe "User", :transactional do
   before(:all) do
     @cache = {}
@@ -115,6 +127,18 @@ RSpec.describe "User", :transactional do
 
       it "refinds items" do
         expect(posts.any?(&:dirty)).to eq false
+      end
+    end
+
+    context "with non-ActiveRecord object", order: :defined do
+      let_it_be(:ice_cube, refind: true) { IceCube.new }
+
+      it "creates the object" do
+        ice_cube.melt
+      end
+
+      it "recreates the object" do
+        expect(ice_cube.melted).to eq false
       end
     end
 
